@@ -24,5 +24,4 @@ extern QMap<QString,AddressingTypes> addrTypes;
 
 extern QMap<QString,Operations> operations;
 
-extern QMap<QString,QString> test;
 #endif // DEFS_H
