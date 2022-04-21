@@ -1,0 +1,13 @@
+<RCC>
+    <qresource prefix="/images">
+        <file>Computer.png</file>
+        <file>Close.jpg</file>
+        <file>Exit.png</file>
+        <file>Open File.png</file>
+        <file>Operations.png</file>
+        <file>Program.png</file>
+        <file>Save.png</file>
+        <file>New File.png</file>
+    </qresource>
+    <qresource prefix="/Projects"/>
+</RCC>
