@@ -14,20 +14,22 @@ private:
     QString program;
     QString templateCommand;
     QRegularExpression separators;
+    QString ignoreSymbols;
 
-    const bool isCommandValid(QString command);
+    bool isCommandValid(QString command) const;
 
-    const bool isContainingDigits(const QString& operand);
+    bool isContainingDigits(const QString& operand) const;
 
-    const bool isContainingLetters(const QString& operand);
+    bool isContainingLettersOrNumbers(const QString& operand) const;
 
-    const bool isContainingLettersOrNumbers(const QString& operand);
+    bool isUnknownOperation(const QString& operation)  const;
 
-    const bool isUnknownOperation(const QString& operation);
+    bool isUnknownAddrType(const QString& addrType) const;
 
-    const bool isUnknownAddrType(const QString& addrType);
+    bool isIgnorable(QChar symbol) const;
+
 public:
-    Parser(QString templCom,QRegularExpression commandSeparators);
+    Parser(QString templCom,QRegularExpression commandSeparators,QString toIgnore);
 
     void setProgramText(const QString& prog);
 
@@ -35,7 +37,15 @@ public:
 
     bool IsProgramValid();
 
+    bool isContainingLetters(const QString& operand) const;
+
     const QString getCommandTemplate();
+
+    const QString formCommand(QStringList list);
+
+    const QStringList returnSplittedCommand(QString command);
+
+    bool isUnknownRegister(const QString& regName) const;
 
     virtual ~Parser();
 };

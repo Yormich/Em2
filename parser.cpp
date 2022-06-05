@@ -1,7 +1,7 @@
 #include "parser.h"
 
-Parser::Parser(QString templateProg,QRegularExpression commandSeparators) : templateCommand(templateProg),
-    separators(commandSeparators)
+Parser::Parser(QString templateProg,QRegularExpression commandSeparators,QString toIgnore) : templateCommand(templateProg),
+    separators(commandSeparators),ignoreSymbols(toIgnore)
 {
 }
 
@@ -10,16 +10,28 @@ Parser::~Parser()
     delete this;
 }
 
-
+bool Parser::isIgnorable(const QChar symbol) const
+{
+    for(const auto symb : ignoreSymbols)
+    {
+        if(symb == symbol)
+        {
+            return true;
+        }
+    }
+    return false;
+}
 bool Parser::IsProgramValid()
 {
     if(!program.isEmpty())
     {
         QStringList commands = program.split("\n");
-         for(auto el : commands)
+         for(const auto& el : commands)
          {
              if(!isCommandValid(el))
              {
+                 QMessageBox::warning(new QMessageBox(),QMessageBox::tr("Неправильная команда"),
+                                      QMessageBox::tr("Неправильная команда, %1").arg(el));
                  return false;
              }
          }
@@ -33,31 +45,37 @@ bool Parser::IsProgramValid()
     return true;
 }
 
-const bool Parser::isContainingLetters(const QString &operand)
+bool Parser::isContainingLetters(const QString &operand) const
 {
     for(const auto& symbol : operand)
     {
         if(!symbol.isLetter())
         {
-            return false;
+            if(!isIgnorable(symbol))
+            {
+                return false;
+            }
         }
     }
     return true;
 }
 
-const bool Parser::isContainingDigits(const QString& operand)
+bool Parser::isContainingDigits(const QString& operand) const
 {
     for(const auto& symbol : operand)
     {
         if(!symbol.isDigit())
         {
-            return false;
+            if(!isIgnorable(symbol))
+            {
+                return false;
+            }
         }
     }
     return true;
 }
 
-const bool Parser::isContainingLettersOrNumbers(const QString &operand)
+bool Parser::isContainingLettersOrNumbers(const QString &operand) const
 {
     for(const auto& symbol : operand)
     {
@@ -69,7 +87,7 @@ const bool Parser::isContainingLettersOrNumbers(const QString &operand)
     return true;
 }
 
-const bool Parser::isUnknownAddrType(const QString &addrType)
+bool Parser::isUnknownAddrType(const QString &addrType) const
 {
     if(addrTypes.count(addrType)==1)
     {
@@ -78,7 +96,7 @@ const bool Parser::isUnknownAddrType(const QString &addrType)
     return true;
 }
 
-const bool Parser::isUnknownOperation(const QString &operation)
+bool Parser::isUnknownOperation(const QString &operation) const
 {
     if(operations.count(operation)==1)
     {
@@ -87,7 +105,16 @@ const bool Parser::isUnknownOperation(const QString &operation)
     return true;
 }
 
-const bool Parser::isCommandValid(QString command)
+bool Parser::isUnknownRegister(const QString &regName) const
+{
+    if(registers.count(regName)==1)
+    {
+        return false;
+    }
+    return true;
+}
+
+bool Parser::isCommandValid(QString command) const
 {
     QStringList els = command.split(separators,Qt::SkipEmptyParts);
     QStringList templElements = templateCommand.split(separators,Qt::SkipEmptyParts);
@@ -102,8 +129,8 @@ const bool Parser::isCommandValid(QString command)
             {
                 if(isUnknownOperation(els[i]) || !isContainingLetters(els[i]))
                 {
-                    QMessageBox::warning(new QMessageBox(),QMessageBox::tr("Wrong oper type"),
-                                         QMessageBox::tr("Wrong operation: %1\n Line: %2").arg(els[i]).arg(els[0]));
+                    QMessageBox::warning(new QMessageBox(),QMessageBox::tr("Неправильный тип операции"),
+                                         QMessageBox::tr("Неизвестная операция: %1\n Строка: %2").arg(els[i]).arg(els[0]));
                     return false;
                 }
             }
@@ -111,8 +138,8 @@ const bool Parser::isCommandValid(QString command)
             {
                 if(isUnknownAddrType(els[i]) || !isContainingLetters(els[i]))
                 {
-                    QMessageBox::warning(new QMessageBox(),QMessageBox::tr("Wrong addR type"),
-                                         QMessageBox::tr("Wrong addr type: %1 \n Line: %2").arg(els[i]).arg(els[0]));
+                    QMessageBox::warning(new QMessageBox(),QMessageBox::tr("Неправильный тип аддресации"),
+                                         QMessageBox::tr("Неизвестный тип операции: %1 \n Строка: %2").arg(els[i]).arg(els[0]));
                     return false;
                 }
 
@@ -121,7 +148,7 @@ const bool Parser::isCommandValid(QString command)
             {
                 if(i!=0)//строка
                 {
-                      if(els[i].size()==templElements[i].size())
+                      if(els[i].size()>0)
                       {
                           switch(addrTypes[els[addrTypePos]])
                           {
@@ -136,7 +163,7 @@ const bool Parser::isCommandValid(QString command)
                           case AddressingTypes::BaseRegister:
 
                           case AddressingTypes::IndirectRegister:
-                              if(!isContainingDigits(els[i]) || !isContainingLetters(els[i]))
+                              if(!isContainingDigits(els[i]) && !isContainingLetters(els[i]))
                               {
                                   return false;
                               }
@@ -150,7 +177,7 @@ const bool Parser::isCommandValid(QString command)
                 }
                 else
                 {
-                    if(!isContainingDigits(els[i]) || els[i].toInt()>511)//размер памяти в параметры
+                    if(!isContainingDigits(els[i]))//размер памяти в параметры
                     {
                         return false;
                     }
@@ -160,14 +187,30 @@ const bool Parser::isCommandValid(QString command)
     }
     else
     {
-        QMessageBox::warning(new QMessageBox(),QMessageBox::tr("Error in reading a command"),
-                             QMessageBox::tr("Wrong size of command: %1").arg(els.size()));
+        QMessageBox::warning(new QMessageBox(),QMessageBox::tr("Ошибка в чтении команды"),
+                             QMessageBox::tr("Неправильный размер команды после разбиения: %1").arg(els.size()));
         return false;
     }
-
     return true;
 }
 
+ const QString Parser::formCommand(QStringList list)
+ {
+     QString command;
+     for(int i = 0; i < list.size(); i++)
+     {
+         i == 0 ? command+=list[i]+"; " : i == 1 ? command+=list[i]+": " :
+                 i==2 ? command+="<"+list[i]+"> " :
+                 i==3 ? command+=list[i]+", " : command+=list[i]+" ";
+     }
+     return command;
+ }
+
+const QStringList Parser::returnSplittedCommand(QString command)
+ {
+      QStringList list = command.split(separators,Qt::SkipEmptyParts);
+      return list;
+ }
 
 void Parser::setProgramText(const QString &prog)
 {

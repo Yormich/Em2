@@ -13,13 +13,15 @@ SOURCES += \
     main.cpp \
     mainwindow.cpp \
     memory.cpp \
-    parser.cpp
+    parser.cpp \
+    processor.cpp
 
 HEADERS += \
     defs.h \
     mainwindow.h \
     memory.h \
-    parser.h
+    parser.h \
+    processor.h
 
 FORMS += \
     mainwindow.ui
